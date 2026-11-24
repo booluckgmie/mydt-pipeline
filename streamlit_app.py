@@ -1,5 +1,5 @@
 """Streamlit front-end: upload country workbooks -> issues, indicators, downloadable CSVs.
-Run:  pip install -e .[app] && streamlit run app.py
+Run:  pip install -e .[app] && streamlit run streamlit_app.py
 """
 import tempfile
 from pathlib import Path
