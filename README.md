@@ -14,7 +14,7 @@ indicators.py compute_indicators          -> independent Python GER / NER / GPI
 validate.py   validate, qc_checklist      -> rules V01-V12, per-country PASS / REVIEW checklist
 consolidate.py consolidate                -> CSV + SQLite database + run log (a corrupt file never stops a batch)
 report.py     all_reports                 -> self-contained HTML review per country
-cli.py / app.py                           -> command line and Streamlit uploader
+cli.py / streamlit_app.py                         -> command line and Streamlit uploader
 ```
 
 ## Quick start
