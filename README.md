@@ -24,7 +24,7 @@ pip install -e .[dev,app]
 mydt synth sample_data/submissions -n 10        # synthetic submissions
 mydt run sample_data/submissions sample_data/run  # validate + consolidate + reports
 mydt add-year sample_data/submissions/MYDT_XC01.xlsx 2027   # extend a template, data preserved
-streamlit run app.py
+streamlit run streamlit_app.py
 pytest
 ```
 

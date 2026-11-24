@@ -1,6 +1,6 @@
 sample_data
 tests
-app.py
 .venv
 __pycache__
 *.egg-info
+streamlit_app.py
