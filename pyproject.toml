@@ -1,0 +1,13 @@
+[project]
+name = "mydt-pipeline"
+version = "0.1.0"
+description = "Demo pipeline: build, validate, consolidate and review Excel-based dynamic data-collection templates (synthetic SDG 4-style data)"
+requires-python = ">=3.10"
+dependencies = ["openpyxl>=3.1", "pandas>=2.0", "numpy", "matplotlib", "jinja2"]
+[project.optional-dependencies]
+app = ["streamlit"]
+dev = ["pytest"]
+[project.scripts]
+mydt = "mydt.cli:main"
+[tool.setuptools]
+packages = ["mydt"]

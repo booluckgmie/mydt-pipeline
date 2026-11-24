@@ -1,0 +1,28 @@
+country,rule,severity,year,where,message
+XC02,V03,error,2026,Enrolment!L11,Negative value -1200
+XC02,V06,warning,2026,Enrolment:age11,"Cohort 2025->2026, age 10->11: ratio 0.52"
+XC03,V02,error,2026,Enrolment!M12,Value 'n/a' is not numeric
+XC04,V05,warning,2026,Enrolment:ISCED1:age9,"ISCED1 age 9: 1,249,985 vs neighbours' mean 181,098"
+XC04,V06,warning,2026,Enrolment:age9,"Cohort 2025->2026, age 8->9: ratio 7.59"
+XC04,V07,warning,2026,Indicators:ISCED1,GER 185.4%
+XC04,V09,error,2026,Indicators:ISCED1,NER 182.1%
+XC04,V10,warning,2026,Indicators:ISCED1,GPI 0.35
+XC04,V11,warning,2026,Enrolment:ISCED1,ISCED1 total changed +102%
+XC04,V12,error,2026,Enrolment:age9,"Enrolment 1,249,985 > 1.5x population 199,225"
+XC05,V04,error,2026,Enrolment:2026,No enrolment data for 2026
+Synthetic Country 06,V01,error,,Metadata:ISO3,'ISO3' is missing
+XC07,V06,warning,2026,Enrolment:age7,"Cohort 2025->2026, age 6->7: ratio 2.69"
+XC07,V06,warning,2026,Enrolment:age8,"Cohort 2025->2026, age 7->8: ratio 2.47"
+XC07,V06,warning,2026,Enrolment:age9,"Cohort 2025->2026, age 8->9: ratio 2.70"
+XC07,V06,warning,2026,Enrolment:age10,"Cohort 2025->2026, age 9->10: ratio 2.46"
+XC07,V06,warning,2026,Enrolment:age11,"Cohort 2025->2026, age 10->11: ratio 2.69"
+XC07,V08,error,2026,Indicators:ISCED1,GER 235.8%
+XC07,V09,error,2026,Indicators:ISCED1,NER 226.7%
+XC07,V11,warning,2026,Enrolment:ISCED1,ISCED1 total changed +154%
+XC07,V12,error,2026,Enrolment:age6,"Enrolment 126,953 > 1.5x population 58,020"
+XC07,V12,error,2026,Enrolment:age7,"Enrolment 137,564 > 1.5x population 59,310"
+XC07,V12,error,2026,Enrolment:age8,"Enrolment 142,696 > 1.5x population 60,600"
+XC07,V12,error,2026,Enrolment:age9,"Enrolment 143,547 > 1.5x population 61,888"
+XC07,V12,error,2026,Enrolment:age10,"Enrolment 136,546 > 1.5x population 63,178"
+XC07,V12,error,2026,Enrolment:age11,"Enrolment 150,108 > 1.5x population 64,467"
+XC08,V06,warning,2026,Enrolment:age9,"Cohort 2025->2026, age 8->9: ratio 0.36"
