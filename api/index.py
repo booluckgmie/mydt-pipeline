@@ -25,7 +25,9 @@ th{{background:#f0f0f0}}small{{color:#666}}</style>
 <button>Check</button></p></form>{body}"""
 
 
+# vercel.json rewrites every path to /api/index, and Flask sees that rewritten path.
 @app.route("/", methods=["GET", "POST"])
+@app.route("/api/index", methods=["GET", "POST"])
 def index():
     if request.method == "GET":
         return PAGE.format(body="")
