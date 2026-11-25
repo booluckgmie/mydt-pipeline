@@ -112,3 +112,19 @@ def test_user_controlled_text_is_escaped(tmp_path):
            "run_log": pd.DataFrame([{"file": "<x>.xlsx", "status": "FAILED", "detail": ""}])}
     html = results_html(res, 1)
     assert "<img src=x>" not in html and "<script>alert(1)" not in html and "&lt;img src=x&gt;" in html
+
+
+def test_theme_switch_markup_and_no_flash_script():
+    html = app.test_client().get("/").data.decode()
+    assert 'id=theme-toggle' in html and 'role=switch' in html and "aria-label='Dark mode'" in html
+    head = html.split("</head>")[0]
+    assert "localStorage.getItem('mydt-theme')" in head and "setAttribute('data-theme'" in head  # applied before paint
+    assert ":root[data-theme=dark]" in html and ":root:not([data-theme=light])" in html
+    assert "__DARK__" not in html
+
+
+def test_dark_tokens_are_identical_for_system_and_manual_dark():
+    html = app.test_client().get("/").data.decode()
+    sys_dark = re.search(r"prefers-color-scheme:dark\)\{:root:not\(\[data-theme=light\]\)\{(.*?)\}\}", html).group(1)
+    manual = re.search(r":root\[data-theme=dark\]\{(.*?)\}", html).group(1)
+    assert sys_dark == manual and "--bg:#0e131a" in manual

@@ -34,13 +34,16 @@ LANG_NAMES = {"en": "English", "fr": "Français", "es": "Español", "pt": "Portu
 TABS = [("overview", "Overview"), ("samples", "Samples"), ("check", "Check my files"),
         ("results", "Results"), ("rules", "Rules"), ("templates", "Templates"), ("about", "About")]
 
+DARK = ("color-scheme:dark;--bg:#0e131a;--surface:#161d27;--text:#e8edf3;--muted:#98a5b5;--line:#283240;"
+        "--brand:#6b9aff;--brand-ink:#0a1220;--brand-soft:#1a2740;--ok:#5fd39a;--ok-bg:#12301f;--warn:#f0b35a;--warn-bg:#35260f;"
+        "--err:#ff9088;--err-bg:#3a1a18;--shadow:0 1px 2px rgba(0,0,0,.4);--c1:#6b9aff;--c2:#fb923c;--c3:#34d399")
+
 CSS = """
-:root{--bg:#f5f6f8;--surface:#fff;--text:#1b2430;--muted:#5b6777;--line:#e2e6ec;--brand:#1d5cff;--brand-ink:#fff;
+:root{color-scheme:light;--bg:#f5f6f8;--surface:#fff;--text:#1b2430;--muted:#5b6777;--line:#e2e6ec;--brand:#1d5cff;--brand-ink:#fff;
 --brand-soft:#e8efff;--ok:#0b7a43;--ok-bg:#e1f4ea;--warn:#8a5200;--warn-bg:#fcefd6;--err:#b3261e;--err-bg:#fae6e4;
 --shadow:0 1px 2px rgba(16,24,40,.06),0 6px 18px rgba(16,24,40,.06);--c1:#2563eb;--c2:#ea580c;--c3:#059669}
-@media (prefers-color-scheme:dark){:root{--bg:#0e131a;--surface:#161d27;--text:#e8edf3;--muted:#98a5b5;--line:#283240;
---brand:#6b9aff;--brand-ink:#0a1220;--brand-soft:#1a2740;--ok:#5fd39a;--ok-bg:#12301f;--warn:#f0b35a;--warn-bg:#35260f;
---err:#ff9088;--err-bg:#3a1a18;--shadow:0 1px 2px rgba(0,0,0,.4);--c1:#6b9aff;--c2:#fb923c;--c3:#34d399}}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){__DARK__}}
+:root[data-theme=dark]{__DARK__}
 *{box-sizing:border-box}html{scroll-behavior:smooth}
 body{margin:0;font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
 a{color:var(--brand)}h1,h2,h3,h4{line-height:1.2;margin:0 0 .5rem}h2{font-size:1.5rem}h3{font-size:1.1rem}
@@ -95,11 +98,32 @@ details{margin:.6rem 0}summary{cursor:pointer;font-weight:700}
 footer{border-top:1px solid var(--line);padding:18px 0 30px;color:var(--muted);font-size:.85rem}
 svg .ax{fill:var(--muted);font-size:11px}svg .gl{stroke:var(--line)}svg .ref{stroke:var(--muted)}
 @media (max-width:560px){.card{padding:14px}.hero{padding:22px 16px}}
+@media (max-width:720px){nav.tabs{order:3;flex-basis:100%;margin:0 -4px}.bar{gap:8px 12px}}
 """
+
+CSS += """
+.theme{display:none;margin-left:auto;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);color:var(--muted);
+padding:5px 10px;border-radius:99px;cursor:pointer;font:inherit}
+.js .theme{display:inline-flex}.theme:hover{border-color:var(--brand)}
+.theme svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.theme .track{position:relative;width:34px;height:18px;border-radius:99px;background:var(--line);transition:background .15s}
+.theme .knob{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--surface);
+box-shadow:0 1px 2px rgba(0,0,0,.35);transition:transform .15s}
+.theme[aria-checked=true] .track{background:var(--brand)}.theme[aria-checked=true] .knob{transform:translateX(16px)}
+.theme:focus-visible,nav.tabs button:focus-visible,.btn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.theme .track,.theme .knob{transition:none}}
+"""
+CSS = CSS.replace("__DARK__", DARK)
 
 JS = """
 (function(){
 document.documentElement.classList.add('js');
+var tg=document.getElementById('theme-toggle'),mq=window.matchMedia('(prefers-color-scheme: dark)'),root=document.documentElement;
+function isDark(){var t=root.getAttribute('data-theme');return t?t==='dark':mq.matches;}
+function sync(){if(tg)tg.setAttribute('aria-checked',isDark()?'true':'false');}
+if(tg){tg.addEventListener('click',function(){var next=isDark()?'light':'dark';root.setAttribute('data-theme',next);
+  try{localStorage.setItem('mydt-theme',next);}catch(e){}sync();});
+  if(mq.addEventListener)mq.addEventListener('change',sync);sync();}
 var body=document.body,tabs=[].slice.call(document.querySelectorAll('nav.tabs button')),
     panels=[].slice.call(document.querySelectorAll('.panel'));
 function show(id){
@@ -417,10 +441,17 @@ def page(active: str = "overview", *, samples=(), preview: str = "", results: st
     return (
         "<!doctype html><html lang=en><head><meta charset=utf-8>"
         "<meta name=viewport content='width=device-width,initial-scale=1'>"
-        "<title>MYDT Checker</title><style>" + CSS + "</style></head>"
+        "<title>MYDT Checker</title>"
+        "<script>try{var t=localStorage.getItem('mydt-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>"
+        "<style>" + CSS + "</style></head>"
         f"<body data-active={active} data-force={'1' if force else '0'}>"
         "<header class=top><div class=wrap><div class=bar><div class=logo><span class=mark>M</span>MYDT Checker"
-        "<span class=pill>SYNTHETIC DEMO</span></div><nav class=tabs aria-label=Sections>" + nav + "</nav></div></div></header>"
+        "<span class=pill>SYNTHETIC DEMO</span></div><nav class=tabs aria-label=Sections>" + nav + "</nav>"
+        "<button class=theme id=theme-toggle type=button role=switch aria-checked=false aria-label='Dark mode' title='Switch light / dark'>"
+        "<svg viewBox='0 0 24 24' aria-hidden=true><circle cx=12 cy=12 r=4 /><path d='M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4'/></svg>"
+        "<span class=track><span class=knob></span></span>"
+        "<svg viewBox='0 0 24 24' aria-hidden=true><path d='M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z'/></svg></button>"
+        "</div></div></header>"
         "<main><div class=wrap>" + sections + "</div></main>"
         f"<footer><div class=wrap>Synthetic data, illustrative only. <a href='{REPO}'>Source code</a></div></footer>"
         "<script>" + JS + "</script></body></html>")
