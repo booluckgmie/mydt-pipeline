@@ -76,3 +76,10 @@ def test_python_indicator_matches_excel_formulas(run, tmp_path):
                 ref = py[(py.level == lvl) & (py.indicator == ind) & (py.year == y) & (py.sex == "T")].value.iloc[0]
                 assert excel == pytest.approx(ref, rel=1e-6); checked += 1
     assert checked == 24
+
+
+def test_issues_use_the_same_country_label_as_the_data(run):
+    """A workbook with no ISO3 must not have its issues filed under a different name from its data."""
+    res = run[1]
+    assert set(res["issues"].country) <= set(res["indicators"].country)
+    assert ((res["issues"].country == "MYDT_XC06") & (res["issues"].rule == "V01")).any()

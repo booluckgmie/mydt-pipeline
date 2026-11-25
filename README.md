@@ -50,19 +50,23 @@ How a data-collection round runs, end to end. Every step has a command and, for 
 
 ### Using the web UI
 
-The same page works locally (`streamlit run streamlit_app.py`) and on Vercel (`api/index.py`, a Flask equivalent). On Vercel:
+The same demo runs locally (`streamlit run streamlit_app.py`) and on Vercel (`api/index.py`, a Flask app whose HTML is built in `mydt/webui.py`). The Vercel version is one page with tabs:
 
-1. **Try the samples first.** The *Sample data* panel lists 10 synthetic workbooks. Seven carry one deliberate defect, shown in the *Injected defect* column.
-2. **Preview input.** Shows a workbook's metadata, total enrolment by level and year, and its first data cells, so you can see what is about to be checked.
-3. **Run checker on all 10 samples.** Shows the output: run log, issues by country and severity, the full issue list, and total indicators. Compare each issue with the defect that was injected.
-4. **Download.** *Download .xlsx* on a row (or the whole zip) gives you the files to open in Excel or to re-upload.
-5. **Upload your own.** Choose `.xlsx` files and press *Check*. You get the input preview for each file, then the same output as step 3. Uploads are limited to 4 MB per request.
+| Tab | What you do there |
+|---|---|
+| **Overview** | See the four steps and start with *Run the 10 sample files*, *Upload your files* or *Get a template*. |
+| **Samples** | Ten synthetic workbooks, seven with a deliberate defect (shown on each card). *Preview input* shows metadata, total enrolment by level and year and the first data cells; *Download .xlsx* or the zip gives you the files. |
+| **Check my files** | Drag and drop your `.xlsx` workbooks (4 MB in total) and press *Check files*. |
+| **Results** | Appears after a run: file, clean-country, error and warning counts; a PASS-style status per country; an indicator chart (GER or NER by level and year, per country); an issues table you can filter by severity, country and rule; CSV downloads of issues, indicators and the run log. |
+| **Rules** | All twelve rules (V01-V12) with severity, plus the thresholds from `config.py`. |
+| **Templates** | Build a blank multi-year template in English, French, Spanish, Portuguese or Russian, for the years you choose, optionally pre-filled with country, ISO3 and survey year. |
+| **About** | What the demo is, its limits and the source code. |
 
-The Vercel version does not produce the HTML review reports or CSV/SQLite downloads (they need matplotlib and a writable disk); use the CLI for those.
+Nothing is stored: results exist only in the page you are looking at. The Vercel version does not produce the HTML review reports or the SQLite database (they need matplotlib and a writable disk); use the CLI (`mydt run`) for those. The page uses no JavaScript libraries and follows the visitor's light or dark setting.
 
 ## Deploying to Vercel
 
-`api/index.py` is the entrypoint and `vercel.json` rewrites every path to it, so Flask only sees `/api/index` and all UI actions are POST fields on one URL. Vercel installs dependencies from `pyproject.toml` (not `requirements.txt`), so anything the app imports, including `flask`, must be listed there. The Streamlit script is `streamlit_app.py`, not `app.py`, so Vercel does not mistake it for the entrypoint.
+`api/index.py` is the entrypoint and `vercel.json` rewrites every path to it, so Flask only sees `/api/index`; every UI action (preview, download, run, template) is a POST with an `action` field on one URL. Vercel installs dependencies from `pyproject.toml` (not `requirements.txt`), so anything the app imports, including `flask`, must be listed there. The Streamlit script is `streamlit_app.py`, not `app.py`, so Vercel does not mistake it for the entrypoint.
 
 ## Design choices
 
