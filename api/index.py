@@ -64,7 +64,9 @@ def samples_panel(selected=None):
         rows.append(
             f"<tr><td>{escape(p.name)}</td><td>{escape(DEFECT_TEXT[DEFECTS.get(i)])}</td><td>"
             f"<form class=inline method=post><input type=hidden name=action value=preview>"
-            f"<input type=hidden name=name value='{escape(p.name)}'><button>Preview input</button></form></td></tr>")
+            f"<input type=hidden name=name value='{escape(p.name)}'><button>Preview input</button></form> "
+            f"<form class=inline method=post><input type=hidden name=action value=download>"
+            f"<input type=hidden name=name value='{escape(p.name)}'><button>Download .xlsx</button></form></td></tr>")
     return ("<div class=box><h3>Sample data</h3>"
             "<p class=muted>10 synthetic country workbooks; 7 carry one deliberate defect so you can see "
             "what the checker flags.</p>"
@@ -118,6 +120,12 @@ def index():
         buf.seek(0)
         return send_file(buf, mimetype="application/zip", as_attachment=True,
                          download_name="mydt_sample_submissions.zip")
+    if action == "download":
+        match = [p for p in sample_files() if p.name == request.form.get("name")]
+        if not match:
+            return PAGE.format(samples=samples_panel(), body="<p>Unknown sample.</p>"), 400
+        return send_file(match[0], as_attachment=True, download_name=match[0].name,
+                         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     if action == "preview":
         match = [p for p in sample_files() if p.name == request.form.get("name")]
         if not match:
