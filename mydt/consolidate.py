@@ -22,7 +22,7 @@ def consolidate(files: list[Path], outdir: str | Path) -> dict[str, pd.DataFrame
             bucket.append(df.assign(country=code, file=Path(f).name))
         i = compute_indicators(sub["enrolment"], sub["population"]).assign(country=code)
         ind.append(i)
-        iss.append(validate(sub))
+        iss.append(validate(sub).assign(country=code))  # same label as the data, even when ISO3 is missing
         log.append({"file": Path(f).name, "status": "OK", "detail": ""})
     res = {
         "enrolment": pd.concat(enr, ignore_index=True) if enr else pd.DataFrame(),
