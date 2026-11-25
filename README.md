@@ -62,7 +62,7 @@ The same demo runs locally (`streamlit run streamlit_app.py`) and on Vercel (`ap
 | **Templates** | Build a blank multi-year template in English, French, Spanish, Portuguese or Russian, for the years you choose, optionally pre-filled with country, ISO3 and survey year. |
 | **About** | What the demo is, its limits and the source code. |
 
-Nothing is stored: results exist only in the page you are looking at. The Vercel version does not produce the HTML review reports or the SQLite database (they need matplotlib and a writable disk); use the CLI (`mydt run`) for those. The page uses no JavaScript libraries and follows the visitor's light or dark setting.
+Nothing is stored: results exist only in the page you are looking at. The Vercel version does not produce the HTML review reports or the SQLite database (they need matplotlib and a writable disk); use the CLI (`mydt run`) for those. The page uses no JavaScript libraries. It follows the visitor's system light or dark setting until they flip the switch in the header; the choice is remembered in the browser (`localStorage`) and applied before the page paints, so there is no flash.
 
 ## Deploying to Vercel
 
