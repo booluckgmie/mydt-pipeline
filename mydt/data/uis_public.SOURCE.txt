@@ -1,0 +1,6 @@
+Source: UNESCO Institute for Statistics (UIS), public data API https://api.uis.unesco.org
+Data release: November 2026 Data Release (API version 20261110-392b682a)
+Retrieved: 2026-11-25
+Years: 2015-2025. Countries: MYS, IDN, PHL, VNM, IND, BGD, KEN, NGA, ETH, EGY, BRA, MEX, PER, FRA.
+Check the UIS terms of use and licence before reuse, and keep this credit with the data.
+Rebuild with: python scripts/fetch_uis.py

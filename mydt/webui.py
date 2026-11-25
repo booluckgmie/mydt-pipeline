@@ -11,6 +11,7 @@ from html import escape as esc
 import pandas as pd
 
 from . import config as C
+from . import realdata
 from .i18n import LANGS
 from .read import read_workbook
 from .synthetic import DEFECTS
@@ -32,7 +33,7 @@ DEFECT_TEXT = {
 LANG_NAMES = {"en": "English", "fr": "Français", "es": "Español", "pt": "Português", "ru": "Русский"}
 
 TABS = [("overview", "Overview"), ("samples", "Samples"), ("check", "Check my files"),
-        ("results", "Results"), ("rules", "Rules"), ("templates", "Templates"), ("about", "About")]
+        ("results", "Results"), ("realdata", "Real data"), ("rules", "Rules"), ("templates", "Templates"), ("about", "About")]
 
 DARK = ("color-scheme:dark;--bg:#0e131a;--surface:#161d27;--text:#e8edf3;--muted:#98a5b5;--line:#283240;"
         "--brand:#6b9aff;--brand-ink:#0a1220;--brand-soft:#1a2740;--ok:#5fd39a;--ok-bg:#12301f;--warn:#f0b35a;--warn-bg:#35260f;"
@@ -96,9 +97,10 @@ select,input[type=text],input[type=number]{font:inherit;color:var(--text);backgr
 details{margin:.6rem 0}summary{cursor:pointer;font-weight:700}
 .empty{text-align:center;padding:40px 16px;color:var(--muted)}
 footer{border-top:1px solid var(--line);padding:18px 0 30px;color:var(--muted);font-size:.85rem}
-svg .ax{fill:var(--muted);font-size:11px}svg .gl{stroke:var(--line)}svg .ref{stroke:var(--muted)}
+svg .ax{fill:var(--muted);font-size:11px}svg .lab{font-size:12px;font-weight:700}svg .gl{stroke:var(--line)}svg .ref{stroke:var(--muted)}
 @media (max-width:560px){.card{padding:14px}.hero{padding:22px 16px}}
 @media (max-width:720px){nav.tabs{order:3;flex-basis:100%;margin:0 -4px}.bar{gap:8px 12px}}
+@media (max-width:560px){svg .ax{font-size:16px}svg .lab{font-size:17px}}
 """
 
 CSS += """
@@ -196,10 +198,82 @@ function draw(){
   });
   ends.sort(function(a,b){return a.y-b.y;});
   for(var k=1;k<ends.length;k++){if(ends[k].y-ends[k-1].y<15)ends[k].y=ends[k-1].y+15;}
-  ends.forEach(function(e){svg.appendChild(el('text',{x:e.x,y:e.y,'font-size':12,'font-weight':700,fill:COL[e.l]||'#888'},e.l));});
+  ends.forEach(function(e){svg.appendChild(el('text',{x:e.x,y:e.y,class:'lab',fill:COL[e.l]||'#888'},e.l));});
   box.innerHTML='';box.appendChild(svg);
 }
 cs.onchange=is.onchange=draw;draw();
+})();
+"""
+
+REAL_JS = """
+(function(){
+var D=JSON.parse(document.getElementById('real-data').textContent);
+var cs=document.getElementById('r-country'),ms=document.getElementById('r-measure'),box=document.getElementById('r-svg'),
+    tb=document.getElementById('r-table'),note=document.getElementById('r-note');
+var COL={ISCED1:'var(--c1)',ISCED2:'var(--c2)',ISCED3:'var(--c3)'},LV=['ISCED1','ISCED2','ISCED3'];
+Object.keys(D).sort(function(a,b){return D[a].name<D[b].name?-1:1;}).forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=D[c].name;cs.appendChild(o);});
+if(D.MYS)cs.value='MYS';
+function el(n,a,t){var e=document.createElementNS('http://www.w3.org/2000/svg',n);for(var k in a)e.setAttribute(k,a[k]);if(t!=null)e.textContent=t;return e;}
+function get(c,l,s){var m={};D[c].rows.forEach(function(r){if(r[0]===l&&r[1]===s)m[r[2]]={e:r[3],p:r[4],g:r[5]};});return m;}
+function ger(x){return x&&x.e!=null&&x.p?100*x.e/x.p:null;}
+function fmt(v){return v==null?'-':v>=1e6?(v/1e6).toFixed(2)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':String(Math.round(v));}
+function ticks(mn,mx,n){var raw=(mx-mn)/n,p=Math.pow(10,Math.floor(Math.log10(raw))),st=[1,2,2.5,5,10].map(function(m){return m*p;}).find(function(x){return x>=raw;}),out=[];
+  for(var t=Math.ceil(mn/st)*st;t<=mx+1e-9;t+=st)out.push(+t.toFixed(6));return out;}
+function build(c,kind){
+  var S=[];
+  LV.forEach(function(l){
+    var T=get(c,l,'T'),F=get(c,l,'F'),M=get(c,l,'M'),yrs=Object.keys(T).map(Number).sort();
+    if(kind==='enrol')S.push({l:l,name:l,pts:yrs.filter(function(y){return T[y].e!=null;}).map(function(y){return{x:y,y:T[y].e};})});
+    if(kind==='ger'){
+      S.push({l:l,name:l+' computed',pts:yrs.filter(function(y){return ger(T[y])!=null;}).map(function(y){return{x:y,y:ger(T[y])};})});
+      S.push({l:l,name:l+' UIS published',dash:true,pts:yrs.filter(function(y){return T[y].g!=null;}).map(function(y){return{x:y,y:T[y].g};})});}
+    if(kind==='gpi')S.push({l:l,name:l,pts:yrs.filter(function(y){return F[y]&&M[y]&&ger(F[y])!=null&&ger(M[y]);}).map(function(y){return{x:y,y:ger(F[y])/ger(M[y])};})});
+  });
+  return S;
+}
+function draw(){
+  var c=cs.value,kind=ms.value,S=build(c,kind),all=[].concat.apply([],S.map(function(s){return s.pts;}));
+  box.innerHTML='';
+  if(!all.length){box.innerHTML='<p class=muted>No data for this selection.</p>';return;}
+  var W=640,H=330,L=56,R=84,T=16,B=40,pw=W-L-R,ph=H-T-B,ys=all.map(function(p){return p.y;}),xs=all.map(function(p){return p.x;}),
+      x0=Math.min.apply(null,xs),x1=Math.max.apply(null,xs),mn,mx;
+  if(kind==='enrol'){mn=0;mx=Math.max.apply(null,ys)*1.05;}
+  else if(kind==='gpi'){mn=Math.min(0.8,Math.min.apply(null,ys)-0.03);mx=Math.max(1.2,Math.max.apply(null,ys)+0.03);}
+  else{mn=Math.max(0,Math.min.apply(null,ys)-5);mx=Math.max(100,Math.max.apply(null,ys))+3;}
+  var X=function(x){return L+(x1>x0?(x-x0)/(x1-x0):.5)*pw;},Y=function(v){return T+ph-((v-mn)/(mx-mn))*ph;};
+  var svg=el('svg',{viewBox:'0 0 '+W+' '+H,width:'100%',role:'img','aria-label':ms.options[ms.selectedIndex].text+' for '+D[c].name});
+  ticks(mn,mx,5).forEach(function(t){svg.appendChild(el('line',{x1:L,x2:L+pw,y1:Y(t),y2:Y(t),class:'gl'}));
+    svg.appendChild(el('text',{x:L-6,y:Y(t)+4,'text-anchor':'end',class:'ax'},kind==='enrol'?fmt(t):kind==='gpi'?t.toFixed(2):t));});
+  var ref=kind==='gpi'?1:kind==='ger'?100:null;
+  if(ref!=null&&ref>=mn&&ref<=mx)svg.appendChild(el('line',{x1:L,x2:L+pw,y1:Y(ref),y2:Y(ref),class:'ref','stroke-dasharray':'4 3'}));
+  for(var y=x0;y<=x1;y++)if((y-x0)%2===0||x1-x0<6)svg.appendChild(el('text',{x:X(y),y:H-B+16,'text-anchor':'middle',class:'ax'},y));
+  var ends=[];
+  S.forEach(function(s){
+    var d='',prev=null;s.pts.forEach(function(p){d+=(prev!==null&&p.x===prev+1?'L':'M')+X(p.x)+' '+Y(p.y)+' ';prev=p.x;});
+    svg.appendChild(el('path',{d:d,fill:'none',stroke:COL[s.l],'stroke-width':s.dash?1.8:2.4,'stroke-dasharray':s.dash?'5 4':'none'}));
+    s.pts.forEach(function(p){var m=el('circle',{cx:X(p.x),cy:Y(p.y),r:s.dash?2.8:3.6,fill:s.dash?'var(--surface)':COL[s.l],stroke:COL[s.l],'stroke-width':s.dash?1.6:0});
+      m.appendChild(el('title',{},s.name+' '+p.x+': '+(kind==='enrol'?Math.round(p.y).toLocaleString():kind==='gpi'?p.y.toFixed(3):p.y.toFixed(1)+'%')));svg.appendChild(m);});
+    if(!s.dash&&s.pts.length){var last=s.pts[s.pts.length-1];ends.push({l:s.l,x:X(last.x)+8,y:Y(last.y)+4});}
+  });
+  ends.sort(function(a,b){return a.y-b.y;});for(var k=1;k<ends.length;k++)if(ends[k].y-ends[k-1].y<15)ends[k].y=ends[k-1].y+15;
+  ends.forEach(function(e){svg.appendChild(el('text',{x:e.x,y:e.y,class:'lab',fill:COL[e.l]},e.l));});
+  box.appendChild(svg);
+  note.textContent=kind==='ger'?'Solid = computed (enrolment / school-age population). Dashed with open markers = ratio published by UIS. The vertical axis does not start at 0. Gaps are years UIS does not report.':
+    kind==='gpi'?'Female GER / male GER, computed from the counts. 1.00 = parity (dashed). Gaps are years UIS does not report.':
+    'Enrolment, both sexes, in thousands (K) or millions (M). Gaps are years UIS does not report.';
+}
+function table(){
+  var c=cs.value,rows='';
+  LV.forEach(function(l){
+    var T=get(c,l,'T'),F=get(c,l,'F'),M=get(c,l,'M'),ys=Object.keys(T).map(Number).filter(function(y){return T[y].e!=null&&T[y].p;}).sort(),y=ys[ys.length-1];
+    if(y==null){rows+='<tr><td>'+l+'</td><td colspan=8 class=muted>No data</td></tr>';return;}
+    var gc=ger(T[y]),gp=T[y].g,df=gc!=null&&gp!=null?gc-gp:null;
+    rows+='<tr><td><b>'+l+'</b></td><td>'+y+'</td><td class=num>'+Math.round(T[y].e).toLocaleString()+'</td><td class=num>'+(F[y]&&F[y].e!=null?Math.round(F[y].e).toLocaleString():'-')+'</td><td class=num>'+(M[y]&&M[y].e!=null?Math.round(M[y].e).toLocaleString():'-')+
+      '</td><td class=num>'+Math.round(T[y].p).toLocaleString()+'</td><td class=num>'+gc.toFixed(1)+'</td><td class=num>'+(gp!=null?gp.toFixed(1):'-')+'</td><td class=num>'+(df==null?'-':Math.abs(df)<0.005?'0.00':(df>0?'+':'')+df.toFixed(2))+'</td></tr>';
+  });
+  tb.innerHTML=rows;
+}
+cs.onchange=function(){draw();table();};ms.onchange=draw;draw();table();
 })();
 """
 
@@ -238,7 +312,7 @@ def overview_html() -> str:
     return (
         "<div class='card hero'><h1>Check country submissions in seconds</h1>"
         "<p>Upload Excel data-collection templates, validate them against clear rules, and see the indicators and "
-        "problems per country. Built on synthetic data to show the approach.</p><div class=cta>"
+        "problems per country. The sample files are synthetic; the Real data tab explores public UIS statistics.</p><div class=cta>"
         "<form class=inline method=post data-busy='Running…'><input type=hidden name=action value=run_sample>"
         "<button class='btn primary' type=submit>Run the 10 sample files</button></form>"
         "<button class=btn data-goto=check type=button>Upload your files</button>"
@@ -333,13 +407,56 @@ def about_html() -> str:
         "<h2>About</h2><div class=card><p>This is a reference pipeline for Excel-template-based data collection. "
         "It builds a multi-year template, validates country submissions against traceable rules, consolidates them into one "
         "database and produces per-country indicator reviews.</p>"
-        "<p><b>All data is synthetic.</b> The layout, the indicators (GER, NER, GPI) and the thresholds are illustrative "
-        "stand-ins, not any official tool or methodology.</p>"
+        "<p><b>The sample files are synthetic.</b> Their layout, the indicators (GER, NER, GPI) and the thresholds are illustrative "
+        "stand-ins, not any official tool or methodology. The <b>Real data</b> tab is different: it shows public statistics "
+        "from the UNESCO Institute for Statistics (UIS), level totals only, credited to UIS.</p>"
         f"<p>Source code, tests and the command-line version: <a href='{REPO}'>{REPO.replace('https://', '')}</a>.</p></div>"
         "<div class=card><h3>Limits of this web version</h3><ul>"
         "<li>Uploads are limited to about 4 MB per request.</li>"
         "<li>Nothing is stored: results exist only in the page you are looking at.</li>"
         "<li>HTML review reports and the SQLite database come from the command line (<code>mydt run</code>).</li></ul></div>")
+
+
+def realdata_html() -> str:
+    """Real, public UIS data (snapshot): explorer with chart, latest-year table and an independent GER check."""
+    try:
+        data = realdata.payload()
+        agree = realdata.agreement()
+        src = realdata.source_note()
+    except FileNotFoundError:
+        return "<h2>Real data</h2><div class='card empty'><p>The UIS snapshot is not installed. Run <code>python scripts/fetch_uis.py</code>.</p></div>"
+    release = next((ln.split(":", 1)[1].strip() for ln in src.splitlines() if ln.startswith("Data release")), "")
+    retrieved = next((ln.split(":", 1)[1].strip() for ln in src.splitlines() if ln.startswith("Retrieved")), "")
+    by_country: dict = {}
+    for o in agree["outliers"]:
+        by_country.setdefault(o["country"], []).append(o)
+    outl = "; ".join(
+        f"{esc(c)}: {len(v)} value(s), up to {max(abs(x['diff']) for x in v):.1f} pp "
+        f"({esc(', '.join(sorted({str(x['year']) for x in v})))})" for c, v in by_country.items())
+    check = (f"<p><b>{agree['within']:,} of {agree['compared']:,}</b> comparable values match within {agree['tol']} "
+             f"percentage points ({100 * agree['within'] / agree['compared']:.1f}%). "
+             + (f"Larger gaps: {outl}. A different population series between releases could explain this; it has not been "
+                "verified." if outl else "") + "</p>")
+    head = ("<th>Level</th><th>Year</th><th class=num>Enrolment</th><th class=num>Female</th><th class=num>Male</th>"
+            "<th class=num>School-age pop.</th><th class=num>GER computed %</th><th class=num>GER UIS %</th>"
+            "<th class=num>Diff (pp)</th>")
+    return (
+        "<h2>Real data</h2>"
+        f"<div class='alert info'><b>Real, public data</b> from the UNESCO Institute for Statistics (UIS) data API"
+        f"{' · ' + esc(release) if release else ''}{' · retrieved ' + esc(retrieved) if retrieved else ''} · "
+        f"{len(data)} countries · 2015 to 2025. Level totals only: the public data has no single-age enrolment, so the "
+        "age-by-age rules on the other tabs run on synthetic files. Credit: UIS.</div>"
+        "<div class=card><div class=filters><label>Country <select id=r-country></select></label>"
+        "<label>Measure <select id=r-measure><option value=enrol>Enrolment (number)</option>"
+        "<option value=ger selected>GER: computed vs UIS published (%)</option>"
+        "<option value=gpi>Gender parity of GER (F/M)</option></select></label></div>"
+        "<div id=r-svg></div><p class='muted small' id=r-note></p></div>"
+        f"<div class=card><h3>Latest year per level</h3><div class=tablewrap><table><tr>{head}</tr>"
+        "<tbody id=r-table></tbody></table></div></div>"
+        f"<div class=card><h3>Independent check</h3>{check}"
+        "<p class='muted small'>GER here is recomputed as enrolment divided by school-age population and compared with the "
+        "ratio UIS publishes, the same idea as the template's formula check.</p></div>"
+        f"<script id=real-data type=application/json>{_safe_json(data)}</script><script>{REAL_JS}</script>")
 
 
 # ---------- previews and results ----------
@@ -435,7 +552,7 @@ def page(active: str = "overview", *, samples=(), preview: str = "", results: st
     res_panel = results or ("<div class='card empty'><h3>No results yet</h3>"
                             "<p>Run the samples or check your own files to see results here.</p></div>")
     panels = {"overview": overview_html(), "samples": samples_html(samples, preview), "check": check_html(),
-              "results": res_panel, "rules": rules_html(), "templates": templates_html(), "about": about_html()}
+              "results": res_panel, "realdata": realdata_html(), "rules": rules_html(), "templates": templates_html(), "about": about_html()}
     sections = "".join(f"<section class=panel id=tab-{k} {'hidden' if k != active else ''}>{panels[k]}</section>"
                        for k, _ in TABS)
     return (
@@ -446,12 +563,12 @@ def page(active: str = "overview", *, samples=(), preview: str = "", results: st
         "<style>" + CSS + "</style></head>"
         f"<body data-active={active} data-force={'1' if force else '0'}>"
         "<header class=top><div class=wrap><div class=bar><div class=logo><span class=mark>M</span>MYDT Checker"
-        "<span class=pill>SYNTHETIC DEMO</span></div><nav class=tabs aria-label=Sections>" + nav + "</nav>"
+        "<span class=pill>DEMO</span></div><nav class=tabs aria-label=Sections>" + nav + "</nav>"
         "<button class=theme id=theme-toggle type=button role=switch aria-checked=false aria-label='Dark mode' title='Switch light / dark'>"
         "<svg viewBox='0 0 24 24' aria-hidden=true><circle cx=12 cy=12 r=4 /><path d='M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4'/></svg>"
         "<span class=track><span class=knob></span></span>"
         "<svg viewBox='0 0 24 24' aria-hidden=true><path d='M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z'/></svg></button>"
         "</div></div></header>"
         "<main><div class=wrap>" + sections + "</div></main>"
-        f"<footer><div class=wrap>Synthetic data, illustrative only. <a href='{REPO}'>Source code</a></div></footer>"
+        f"<footer><div class=wrap>Sample files are synthetic; the Real data tab uses public UIS statistics. <a href='{REPO}'>Source code</a></div></footer>"
         "<script>" + JS + "</script></body></html>")

@@ -11,3 +11,5 @@ dev = ["pytest"]
 mydt = "mydt.cli:main"
 [tool.setuptools]
 packages = ["mydt"]
+[tool.setuptools.package-data]
+mydt = ["data/*"]
