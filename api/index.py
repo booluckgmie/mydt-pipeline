@@ -41,6 +41,12 @@ table{{border-collapse:collapse;width:100%;margin:.6rem 0}}td,th{{border:1px sol
 th{{background:#f0f0f0}}small,.muted{{color:#666}}.box{{border:1px solid #ddd;border-radius:8px;padding:.6rem 1rem;margin:1rem 0}}
 button{{padding:4px 10px;cursor:pointer}}h2{{margin-top:1.6rem}}form.inline{{display:inline}}</style>
 <h1>MYDT submission checker</h1><small>SYNTHETIC demo - illustrative format only. Max 4 MB per upload.</small>
+<div class=box><h3>How it works</h3><ol>
+<li><b>Preview</b> a sample (or your own file) to see what is being checked.</li>
+<li><b>Run</b> the checker: every workbook is read, then validated against rules V01-V12.</li>
+<li><b>Review</b> the output: run log, issues by country and severity, total indicators.</li>
+<li><b>Fix and re-upload</b>: countries correct the flagged cells in Excel and submit again.</li></ol>
+<small>Try it with the sample data below; 7 of the 10 files carry a deliberate defect.</small></div>
 <div class=box><h3>Upload your own workbooks</h3>
 <form method=post enctype=multipart/form-data><input type=hidden name=action value=upload>
 <input type=file name=files accept=.xlsx multiple required> <button>Check</button></form></div>
