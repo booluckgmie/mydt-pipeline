@@ -2,7 +2,7 @@
 
 A small, tested reference pipeline for **Excel-template-based data collection**: build a multi-year template with formulas, extend it with new years, validate country submissions against traceable rules, consolidate into one database, and produce per-country indicator review reports.
 
-> All data here is **synthetic**. The workbook layout, indicators (GER, NER, GPI) and thresholds are illustrative stand-ins for a real data-collection template, not any official tool or methodology.
+> The sample workbooks are **synthetic**; the *Real data* tab of the web demo uses a snapshot of public UNESCO Institute for Statistics (UIS) data, credited to UIS. The workbook layout, indicators (GER, NER, GPI) and thresholds are illustrative stand-ins for a real data-collection template, not any official tool or methodology.
 
 ## Pipeline
 
@@ -58,6 +58,7 @@ The same demo runs locally (`streamlit run streamlit_app.py`) and on Vercel (`ap
 | **Samples** | Ten synthetic workbooks, seven with a deliberate defect (shown on each card). *Preview input* shows metadata, total enrolment by level and year and the first data cells; *Download .xlsx* or the zip gives you the files. |
 | **Check my files** | Drag and drop your `.xlsx` workbooks (4 MB in total) and press *Check files*. |
 | **Results** | Appears after a run: file, clean-country, error and warning counts; a PASS-style status per country; an indicator chart (GER or NER by level and year, per country); an issues table you can filter by severity, country and rule; CSV downloads of issues, indicators and the run log. |
+| **Real data** | Public statistics from the UNESCO Institute for Statistics (UIS), 14 countries, 2015 to 2025: pick a country and see enrolment by level, GER computed from the counts against the ratio UIS publishes, or the gender parity of GER, plus a latest-year table and an independent agreement check. Level totals only (the public data has no single-age enrolment), so the age-by-age rules still run on the synthetic files. |
 | **Rules** | All twelve rules (V01-V12) with severity, plus the thresholds from `config.py`. |
 | **Templates** | Build a blank multi-year template in English, French, Spanish, Portuguese or Russian, for the years you choose, optionally pre-filled with country, ISO3 and survey year. |
 | **About** | What the demo is, its limits and the source code. |
@@ -67,6 +68,10 @@ Nothing is stored: results exist only in the page you are looking at. The Vercel
 ## Deploying to Vercel
 
 `api/index.py` is the entrypoint and `vercel.json` rewrites every path to it, so Flask only sees `/api/index`; every UI action (preview, download, run, template) is a POST with an `action` field on one URL. Vercel installs dependencies from `pyproject.toml` (not `requirements.txt`), so anything the app imports, including `flask`, must be listed there. The Streamlit script is `streamlit_app.py`, not `app.py`, so Vercel does not mistake it for the entrypoint.
+
+## Real data snapshot
+
+`mydt/data/uis_public.csv` is a snapshot of public UIS data (enrolment, school-age population and the published GER for ISCED levels 1 to 3, by sex, 14 countries, 2015 to 2025), with its release, retrieval date and credit in `mydt/data/uis_public.SOURCE.txt`. Rebuild it with `python scripts/fetch_uis.py` (stdlib only, needs internet); edit `COUNTRIES` or the year range at the top of that script to change what is fetched. It is stored in the repo so the demo works offline and shows the same numbers every time. Check the UIS terms of use before reusing the data, and keep the credit.
 
 ## Design choices
 
