@@ -24,6 +24,8 @@ pip install -e .[dev,app]
 mydt synth sample_data/submissions -n 10        # synthetic submissions
 mydt run sample_data/submissions sample_data/run  # validate + consolidate + reports
 mydt add-year sample_data/submissions/MYDT_XC01.xlsx 2027   # extend a template, data preserved
+mydt template out/MYDT_fr.xlsx --years 2026 2027 --lang fr   # fr | es | pt | ru | en
+mydt prefill out/MYDT_fr.xlsx --country France --iso3 FRA --survey-year 2027
 streamlit run streamlit_app.py
 pytest
 ```
@@ -63,6 +65,7 @@ The Vercel version does not produce the HTML review reports or CSV/SQLite downlo
 ## Design choices
 
 - **Two independent calculations of every indicator.** The workbook computes them with `SUMIFS` formulas; `indicators.py` recomputes them from raw inputs. `tests/test_pipeline.py` recalculates a workbook in LibreOffice and asserts the two agree for all 24 level/indicator/year cells. Disagreement means a formula bug or a tampered template.
+- **One structure, many languages.** `--lang` changes labels only. A test builds the same submissions in every language and asserts the consolidated numbers and issues are identical to the English ones.
 - **Adding a year never touches existing data.** Year blocks are appended to the right; `add_year` is idempotent.
 - **Every check has a rule ID** (`validate.RULES`) and thresholds live in `config.py`, so the QC checklist is auditable and changes are one-line diffs.
 - **Level-edge awareness.** Age-spike and cohort checks skip ages where steps are legitimate (school entry/exit), which removed all false positives on clean synthetic countries.
@@ -86,4 +89,4 @@ The Vercel version does not produce the HTML review reports or CSV/SQLite downlo
 
 ## Limitations
 
-Synthetic data only; thresholds are not calibrated to real country data; one reference workbook layout (translated template variants would be produced by a language-parameterised build step, not yet implemented).
+Synthetic data only; thresholds are not calibrated to real country data; one reference workbook layout. Translations (fr/es/pt/ru) are drafts for a build step that changes visible labels only; sheet names, level codes and sex codes stay language-neutral so every language version is processed by identical code. A native speaker should review them before use. Stata and R ports of the processing scripts are not included.
