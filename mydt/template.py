@@ -6,6 +6,7 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter as L
 from openpyxl.worksheet.datavalidation import DataValidation
 from . import config as C
+from .i18n import labels
 
 INPUT_FILL = PatternFill("solid", fgColor="FFF2CC")
 CALC_FILL = PatternFill("solid", fgColor="E7E6E6")
@@ -77,48 +78,52 @@ def _indicator_formulas(ws, k: int, year: int) -> None:
         ws.cell(r, t, f'=IFERROR({ger_f}/{ger_m},"")').number_format = "0.00"
 
 
-def build_template(path: str | Path, years: list[int]) -> Path:
+def build_template(path: str | Path, years: list[int], lang: str = "en") -> Path:
+    """Build a template. `lang` (en/fr/es/pt/ru) changes visible labels only; structure is identical."""
+    T = labels(lang)
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
     wb = Workbook()
+    wb.properties.language = lang
     rd = wb.active
     rd.title = "README"
-    rd["A1"] = "MYDT demo template (SYNTHETIC - not the official UIS tool)"
+    rd["A1"] = T["title"]
     rd["A1"].font = Font(bold=True, size=13)
-    rd["A3"] = "Yellow cells: data entry. Grey cells: formulas - do not edit."
-    rd["A4"] = "Sheets: Metadata, Enrolment (by level/age/sex), Population, Indicators, Checks."
+    rd["A3"] = T["fill_note"]
+    rd["A4"] = T["sheets_note"]
     md = wb.create_sheet("Metadata")
-    for i, fld in enumerate(C.META_FIELDS, start=2):
+    for i, fld in enumerate(T["meta_fields"], start=2):
         md.cell(i, 1, fld).font = HEAD
         md.cell(i, 2).fill = INPUT_FILL
     md.column_dimensions["A"].width = 18
     md.column_dimensions["B"].width = 34
 
     en = wb.create_sheet("Enrolment")
-    en["A1"] = "Enrolment by level, single age and sex"; en["A1"].font = HEAD
-    en.cell(C.SEX_ROW, 1, "Level").font = HEAD
-    en.cell(C.SEX_ROW, 2, "Age").font = HEAD
+    en["A1"] = T["enrol_title"]; en["A1"].font = HEAD
+    en.cell(C.SEX_ROW, 1, T["level"]).font = HEAD
+    en.cell(C.SEX_ROW, 2, T["age"]).font = HEAD
     r = C.DATA_ROW0
     for lvl in C.LEVELS:
         for a in C.AGES:
             en.cell(r, 1, lvl); en.cell(r, 2, a); r += 1
     po = wb.create_sheet("Population")
-    po["A1"] = "School-age population by single age and sex"; po["A1"].font = HEAD
-    po.cell(C.SEX_ROW, 1, "All").font = HEAD
-    po.cell(C.SEX_ROW, 2, "Age").font = HEAD
+    po["A1"] = T["pop_title"]; po["A1"].font = HEAD
+    po.cell(C.SEX_ROW, 1, T["all"]).font = HEAD
+    po.cell(C.SEX_ROW, 2, T["age"]).font = HEAD
     for i, a in enumerate(C.AGES):
-        po.cell(C.DATA_ROW0 + i, 1, "All"); po.cell(C.DATA_ROW0 + i, 2, a)
+        po.cell(C.DATA_ROW0 + i, 1, "All"); po.cell(C.DATA_ROW0 + i, 2, a)  # "All" is a data key: keep it language-neutral
 
     ind = wb.create_sheet("Indicators")
-    ind["A1"] = "Indicators (formulas) - GER/NER in %, GPI = F/M of GER"; ind["A1"].font = HEAD
+    ind["A1"] = T["ind_title"]; ind["A1"].font = HEAD
     for i, lvl in enumerate(C.LEVELS):
         for j, nm in enumerate(("GER", "NER")):
             ind.cell(C.DATA_ROW0 + i * 2 + j, 1, lvl); ind.cell(C.DATA_ROW0 + i * 2 + j, 2, nm)
         ind.cell(C.DATA_ROW0 + len(C.LEVELS) * 2 + i, 1, lvl)
         ind.cell(C.DATA_ROW0 + len(C.LEVELS) * 2 + i, 2, "GPI(GER)")
     ck = wb.create_sheet("Checks")
-    ck["A1"] = "Built-in validation checks"; ck["A1"].font = HEAD
-    ck.cell(C.SEX_ROW, 1, "Year").font = HEAD
-    ck.cell(C.SEX_ROW, 2, "Negative cells").font = HEAD
-    ck.cell(C.SEX_ROW, 3, "Status").font = HEAD
+    ck["A1"] = T["check_title"]; ck["A1"].font = HEAD
+    ck.cell(C.SEX_ROW, 1, T["year"]).font = HEAD
+    ck.cell(C.SEX_ROW, 2, T["negative_cells"]).font = HEAD
+    ck.cell(C.SEX_ROW, 3, T["status"]).font = HEAD
     wb.save(path)
     for y in years:
         add_year(path, y)
@@ -152,5 +157,18 @@ def add_year(path: str | Path, year: int) -> Path:
     rng = f"Enrolment!${L(m)}${C.DATA_ROW0}:${L(f)}${_last_row('Enrolment')}"
     ck.cell(r, 2, f'=COUNTIF({rng},"<0")')
     ck.cell(r, 3, f'=IF(B{r}=0,"OK","CHECK")')
+    wb.save(path)
+    return Path(path)
+
+
+def prefill(path: str | Path, country: str | None = None, iso3: str | None = None,
+            survey_year: int | None = None, contact_name: str | None = None,
+            contact_email: str | None = None) -> Path:
+    """Pre-fill the Metadata sheet (column B, same order as config.META_FIELDS). None leaves a cell as is."""
+    wb = load_workbook(path)
+    md = wb["Metadata"]
+    for i, v in enumerate((country, iso3, survey_year, contact_name, contact_email), start=2):
+        if v is not None:
+            md.cell(i, 2, v)
     wb.save(path)
     return Path(path)

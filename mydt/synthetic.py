@@ -63,14 +63,15 @@ def _fill(path, code, name, rng, defect):
     wb.save(path)
 
 
-def make_submissions(outdir: str | Path, n: int = 10, years=(2023, 2024, 2025, 2026), seed: int = 7) -> list[Path]:
+def make_submissions(outdir: str | Path, n: int = 10, years=(2023, 2024, 2025, 2026), seed: int = 7,
+                     lang: str = "en") -> list[Path]:
     outdir = Path(outdir); outdir.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(seed)
     paths = []
     for i in range(1, n + 1):
         code = f"XC{i:02d}"
         p = outdir / f"MYDT_{code}.xlsx"
-        build_template(p, list(years))
+        build_template(p, list(years), lang=lang)
         _fill(p, code, f"Synthetic Country {i:02d}", rng, DEFECTS.get(i))
         paths.append(p)
     return paths
