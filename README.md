@@ -8,6 +8,8 @@ A small, tested reference pipeline for **Excel-template-based data collection**:
 
 ```
 template.py   build_template / add_year   -> multi-year workbook (input cells, formulas, built-in checks)
+i18n.py       labels(lang)                -> en / fr / es / pt / ru visible labels (structure identical)
+              prefill                     -> write country metadata into a template (template.py)
 synthetic.py  make_submissions            -> 10 country files, 7 with a deliberate defect
 read.py       read_workbook               -> tidy tables; non-numeric cells captured, not crashed on
 indicators.py compute_indicators          -> independent Python GER / NER / GPI
