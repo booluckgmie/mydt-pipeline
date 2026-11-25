@@ -26,6 +26,13 @@ def source_note() -> str:
     return SOURCE.read_text(encoding="utf-8") if SOURCE.exists() else ""
 
 
+def latest_years(df: pd.DataFrame | None = None) -> dict:
+    """Latest year with any enrolment or published-GER value, per country (it differs: 2023 to 2025)."""
+    df = load() if df is None else df
+    d = df[df.measure.isin(["enrolment", "ger_published"])]
+    return {c: int(y) for c, y in d.groupby("country").year.max().items()}
+
+
 def wide(df: pd.DataFrame | None = None) -> pd.DataFrame:
     """One row per country, level, sex, year with enrolment, school_age_pop, ger_published, ger_computed, diff."""
     df = load() if df is None else df

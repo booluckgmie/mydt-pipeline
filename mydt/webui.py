@@ -209,7 +209,7 @@ REAL_JS = """
 (function(){
 var D=JSON.parse(document.getElementById('real-data').textContent);
 var cs=document.getElementById('r-country'),ms=document.getElementById('r-measure'),box=document.getElementById('r-svg'),
-    tb=document.getElementById('r-table'),note=document.getElementById('r-note');
+    tb=document.getElementById('r-table'),note=document.getElementById('r-note'),rng=document.getElementById('r-range');
 var COL={ISCED1:'var(--c1)',ISCED2:'var(--c2)',ISCED3:'var(--c3)'},LV=['ISCED1','ISCED2','ISCED3'];
 Object.keys(D).sort(function(a,b){return D[a].name<D[b].name?-1:1;}).forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=D[c].name;cs.appendChild(o);});
 if(D.MYS)cs.value='MYS';
@@ -231,8 +231,12 @@ function build(c,kind){
   });
   return S;
 }
+function range(c){
+  var ys=D[c].rows.filter(function(r){return r[3]!=null||r[5]!=null;}).map(function(r){return r[2];});
+  rng.textContent=ys.length?D[c].name+': data from '+Math.min.apply(null,ys)+' to '+Math.max.apply(null,ys)+' (latest year available).':D[c].name+': no data.';
+}
 function draw(){
-  var c=cs.value,kind=ms.value,S=build(c,kind),all=[].concat.apply([],S.map(function(s){return s.pts;}));
+  var c=cs.value,kind=ms.value,S=build(c,kind);range(c),all=[].concat.apply([],S.map(function(s){return s.pts;}));
   box.innerHTML='';
   if(!all.length){box.innerHTML='<p class=muted>No data for this selection.</p>';return;}
   var W=640,H=330,L=56,R=84,T=16,B=40,pw=W-L-R,ph=H-T-B,ys=all.map(function(p){return p.y;}),xs=all.map(function(p){return p.x;}),
@@ -422,6 +426,7 @@ def realdata_html() -> str:
     try:
         data = realdata.payload()
         agree = realdata.agreement()
+        latest = realdata.latest_years()
         src = realdata.source_note()
     except FileNotFoundError:
         return "<h2>Real data</h2><div class='card empty'><p>The UIS snapshot is not installed. Run <code>python scripts/fetch_uis.py</code>.</p></div>"
@@ -444,13 +449,14 @@ def realdata_html() -> str:
         "<h2>Real data</h2>"
         f"<div class='alert info'><b>Real, public data</b> from the UNESCO Institute for Statistics (UIS) data API"
         f"{' · ' + esc(release) if release else ''}{' · retrieved ' + esc(retrieved) if retrieved else ''} · "
-        f"{len(data)} countries · 2015 to 2025. Level totals only: the public data has no single-age enrolment, so the "
+        f"{len(data)} countries · from 2015 to the latest year each country has (between {min(latest.values())} and "
+        f"{max(latest.values())}; none from 2026). Level totals only: the public data has no single-age enrolment, so the "
         "age-by-age rules on the other tabs run on synthetic files. Credit: UIS.</div>"
         "<div class=card><div class=filters><label>Country <select id=r-country></select></label>"
         "<label>Measure <select id=r-measure><option value=enrol>Enrolment (number)</option>"
         "<option value=ger selected>GER: computed vs UIS published (%)</option>"
         "<option value=gpi>Gender parity of GER (F/M)</option></select></label></div>"
-        "<div id=r-svg></div><p class='muted small' id=r-note></p></div>"
+        "<p class='muted small' id=r-range></p><div id=r-svg></div><p class='muted small' id=r-note></p></div>"
         f"<div class=card><h3>Latest year per level</h3><div class=tablewrap><table><tr>{head}</tr>"
         "<tbody id=r-table></tbody></table></div></div>"
         f"<div class=card><h3>Independent check</h3>{check}"

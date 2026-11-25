@@ -78,3 +78,16 @@ def test_real_data_tab_in_the_page():
     assert len(json.loads(blob)) == 14 and "NaN" not in blob
     assert "Credit: UIS" in html and "Independent check" in html
     assert "SYNTHETIC DEMO" not in html and "Sample files are synthetic" in html
+
+
+def test_latest_year_differs_by_country_and_stops_before_2026():
+    ly = R.latest_years()
+    assert set(ly) == set(R.load().country)
+    assert min(ly.values()) == 2023 and max(ly.values()) <= 2025
+    assert ly["MYS"] == 2025 and ly["KEN"] == 2023
+
+
+def test_banner_states_the_real_year_range():
+    html = app.test_client().get("/").data.decode()
+    assert "to the latest year each country has (between 2023 and 2025; none from 2026)" in html
+    assert "2015 to 2025." not in html and "id=r-range" in html
